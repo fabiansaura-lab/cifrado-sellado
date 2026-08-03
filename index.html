@@ -420,8 +420,10 @@
     return 'SELLO1:' + toB64(payload);
   }
 
-  async function decryptMessage(sealed, password){
-    if(!sealed.startsWith('SELLO1:')){
+  async function decryptMessage(sealedRaw, password){
+    // Elimina espacios, tabulaciones y saltos de línea que el copiar/pegar pueda introducir
+    const sealed = sealedRaw.replace(/\s+/g, '');
+    if(!/^sello1:/i.test(sealed)){
       throw new Error('Formato no reconocido. Pega el bloque completo, empezando por "SELLO1:".');
     }
     const payload = fromB64(sealed.slice(7));
@@ -468,7 +470,7 @@
   document.getElementById('btn-encrypt').addEventListener('click', async (e) => {
     hideError('err-encrypt');
     const msg = document.getElementById('msg-in').value;
-    const pass = document.getElementById('pass-enc').value;
+    const pass = document.getElementById('pass-enc').value.trim();
     const wrap = document.getElementById('wrap-encrypt');
     const out = document.getElementById('out-encrypt');
     if(!msg.trim()){ showError('err-encrypt','Escribe primero un mensaje.'); return; }
@@ -488,7 +490,7 @@
   document.getElementById('btn-decrypt').addEventListener('click', async (e) => {
     hideError('err-decrypt');
     const sealed = document.getElementById('msg-in-dec').value.trim();
-    const pass = document.getElementById('pass-dec').value;
+    const pass = document.getElementById('pass-dec').value.trim();
     const wrap = document.getElementById('wrap-decrypt');
     const out = document.getElementById('out-decrypt');
     if(!sealed){ showError('err-decrypt','Pega el mensaje sellado que recibiste.'); return; }
