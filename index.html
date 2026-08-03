@@ -318,12 +318,12 @@
     <div id="panel-encrypt">
       <div class="field">
         <label for="msg-in">Mensaje</label>
-        <textarea id="msg-in" placeholder="Escribe aquí lo que quieres sellar…"></textarea>
+        <textarea id="msg-in" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Escribe aquí lo que quieres sellar…"></textarea>
       </div>
       <div class="field">
         <label for="pass-enc">Clave compartida</label>
         <div class="pass-row">
-          <input type="password" id="pass-enc" placeholder="Una clave que solo tú y el destinatario conozcáis">
+          <input type="password" id="pass-enc" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="Una clave que solo tú y el destinatario conozcáis">
           <button class="eye" type="button" data-target="pass-enc">Ver</button>
         </div>
       </div>
@@ -344,12 +344,12 @@
     <div id="panel-decrypt" style="display:none;">
       <div class="field">
         <label for="msg-in-dec">Mensaje sellado recibido</label>
-        <textarea id="msg-in-dec" placeholder="Pega aquí el bloque de texto cifrado…"></textarea>
+        <textarea id="msg-in-dec" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Pega aquí el bloque de texto cifrado…"></textarea>
       </div>
       <div class="field">
         <label for="pass-dec">Clave compartida</label>
         <div class="pass-row">
-          <input type="password" id="pass-dec" placeholder="La misma clave que usó quien lo selló">
+          <input type="password" id="pass-dec" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="La misma clave que usó quien lo selló">
           <button class="eye" type="button" data-target="pass-dec">Ver</button>
         </div>
       </div>
