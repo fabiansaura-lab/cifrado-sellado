@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Correspondencia Sellada — Cifrado AES</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #1B2436;
+    --ink-soft: #2A3550;
+    --parchment: #EDE6D6;
+    --parchment-dim: #E1D8C4;
+    --wax: #8C2F1B;
+    --wax-bright: #A8391F;
+    --brass: #A98547;
+    --paper-text: #F5F1E8;
+    --slate: #5C6470;
+    --ok: #4F6B4A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--ink);
+    background-image:
+      radial-gradient(ellipse at top left, rgba(169,133,71,0.10), transparent 55%),
+      radial-gradient(ellipse at bottom right, rgba(140,47,27,0.10), transparent 55%);
+    color: var(--paper-text);
+    font-family: 'Source Serif 4', serif;
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+    padding: 48px 20px 80px;
+  }
+  .sheet{
+    width:100%;
+    max-width: 640px;
+  }
+  header{
+    text-align:center;
+    margin-bottom: 36px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--brass);
+    margin-bottom: 10px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(28px, 5vw, 40px);
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+  .sub{
+    color: #B9BFCE;
+    font-size: 15px;
+    max-width: 440px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  .tabs{
+    display:flex;
+    gap: 4px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 4px;
+    margin-bottom: 28px;
+    width: fit-content;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  .tab{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 9px 20px;
+    border-radius: 999px;
+    cursor:pointer;
+    border:none;
+    background: transparent;
+    color: #9AA1B0;
+    transition: all 0.25s ease;
+  }
+  .tab.active{
+    background: var(--wax);
+    color: var(--paper-text);
+    box-shadow: 0 2px 10px rgba(140,47,27,0.4);
+  }
+  .card{
+    background: var(--parchment);
+    color: var(--ink);
+    border-radius: 4px;
+    padding: 32px 30px 28px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.5) inset,
+      0 30px 60px -20px rgba(0,0,0,0.55);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--wax), var(--brass), var(--wax));
+  }
+  label{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-bottom: 8px;
+  }
+  .field{
+    margin-bottom: 20px;
+  }
+  textarea, input[type="password"], input[type="text"]{
+    width: 100%;
+    font-family: 'Source Serif 4', serif;
+    font-size: 15.5px;
+    background: #FBF8F1;
+    border: 1px solid rgba(27,36,54,0.18);
+    border-radius: 3px;
+    padding: 12px 14px;
+    color: var(--ink);
+    resize: vertical;
+    line-height: 1.5;
+  }
+  textarea:focus, input:focus{
+    outline: 2px solid var(--brass);
+    outline-offset: 1px;
+    background: #FFFDF8;
+  }
+  textarea#msg-in{ min-height: 120px; }
+  .pass-row{
+    display:flex;
+    gap: 10px;
+    align-items:stretch;
+  }
+  .pass-row input{ flex:1; }
+  .eye{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    background: transparent;
+    border: 1px solid rgba(27,36,54,0.18);
+    border-radius: 3px;
+    padding: 0 14px;
+    cursor: pointer;
+    color: var(--slate);
+  }
+  .eye:hover{ border-color: var(--ink); color: var(--ink); }
+
+  .seal-btn{
+    width: 100%;
+    margin-top: 6px;
+    font-family:'Fraunces', serif;
+    font-weight: 600;
+    font-size: 16.5px;
+    letter-spacing: 0.01em;
+    background: var(--wax);
+    color: var(--paper-text);
+    border: none;
+    border-radius: 3px;
+    padding: 15px 20px;
+    cursor: pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+    box-shadow: 0 6px 16px -6px rgba(140,47,27,0.55);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+  .seal-btn:hover{ background: var(--wax-bright); transform: translateY(-1px); }
+  .seal-btn:active{ transform: translateY(1px) scale(0.995); }
+  .seal-btn .glyph{
+    width: 20px; height:20px;
+    border-radius: 50%;
+    background: var(--brass);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 11px;
+    color: var(--wax);
+    font-weight: 700;
+    flex-shrink:0;
+  }
+  .seal-btn.stamping .glyph{ animation: stamp 0.4s ease; }
+  @keyframes stamp{
+    0%{ transform: scale(1); }
+    40%{ transform: scale(1.5) rotate(-8deg); }
+    100%{ transform: scale(1); }
+  }
+
+  .output-wrap{
+    margin-top: 24px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.4s ease, max-height 0.5s ease;
+  }
+  .output-wrap.visible{
+    opacity: 1;
+    max-height: 600px;
+  }
+  .output-label{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom: 8px;
+  }
+  .output-label label{ margin-bottom:0; }
+  .copy-btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--brass);
+    color: var(--ink);
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .copy-btn:hover{ background: var(--brass); color: var(--paper-text); }
+  .output-box{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    word-break: break-all;
+    background: var(--ink);
+    color: #D9CBAE;
+    border-radius: 3px;
+    padding: 16px;
+    border: 1px solid var(--brass);
+    position: relative;
+  }
+  .output-box::before{
+    content: "🔒 SELLADO";
+    display:block;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--brass);
+    margin-bottom: 8px;
+  }
+  .output-box.plain::before{
+    content: "📖 ABIERTO";
+    color: var(--ok);
+  }
+  .output-box.plain{
+    color: var(--ink);
+    background: #FBF8F1;
+    border-color: var(--ok);
+    font-family: 'Source Serif 4', serif;
+    font-size: 15px;
+  }
+
+  .error-box{
+    margin-top: 18px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--wax-bright);
+    background: rgba(140,47,27,0.08);
+    border: 1px solid rgba(140,47,27,0.3);
+    border-radius: 3px;
+    padding: 12px 14px;
+    display:none;
+  }
+  .error-box.visible{ display:block; }
+
+  .note{
+    margin-top: 26px;
+    font-size: 12.5px;
+    color: #8D93A2;
+    text-align:center;
+    line-height: 1.6;
+  }
+  .note b{ color: #B9BFCE; }
+
+  footer{
+    text-align:center;
+    margin-top: 28px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    color: #5C6470;
+    text-transform: uppercase;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .seal-btn, .seal-btn .glyph, .output-wrap{ transition:none; animation:none; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header>
+    <div class="eyebrow">Cifrado de extremo a extremo · AES-256-GCM</div>
+    <h1>Correspondencia Sellada</h1>
+    <p class="sub">Escribe tu mensaje, ponle una clave y séllalo. Solo quien conozca esa misma clave podrá abrirlo.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="encrypt">Sellar</button>
+    <button class="tab" data-mode="decrypt">Abrir</button>
+  </div>
+
+  <div class="card">
+    <!-- ENCRYPT MODE -->
+    <div id="panel-encrypt">
+      <div class="field">
+        <label for="msg-in">Mensaje</label>
+        <textarea id="msg-in" placeholder="Escribe aquí lo que quieres sellar…"></textarea>
+      </div>
+      <div class="field">
+        <label for="pass-enc">Clave compartida</label>
+        <div class="pass-row">
+          <input type="password" id="pass-enc" placeholder="Una clave que solo tú y el destinatario conozcáis">
+          <button class="eye" type="button" data-target="pass-enc">Ver</button>
+        </div>
+      </div>
+      <button class="seal-btn" id="btn-encrypt">
+        <span class="glyph">✦</span> Sellar mensaje
+      </button>
+      <div class="output-wrap" id="wrap-encrypt">
+        <div class="output-label">
+          <label>Mensaje sellado — envía esto</label>
+          <button class="copy-btn" id="copy-encrypt">Copiar</button>
+        </div>
+        <div class="output-box" id="out-encrypt"></div>
+      </div>
+      <div class="error-box" id="err-encrypt"></div>
+    </div>
+
+    <!-- DECRYPT MODE -->
+    <div id="panel-decrypt" style="display:none;">
+      <div class="field">
+        <label for="msg-in-dec">Mensaje sellado recibido</label>
+        <textarea id="msg-in-dec" placeholder="Pega aquí el bloque de texto cifrado…"></textarea>
+      </div>
+      <div class="field">
+        <label for="pass-dec">Clave compartida</label>
+        <div class="pass-row">
+          <input type="password" id="pass-dec" placeholder="La misma clave que usó quien lo selló">
+          <button class="eye" type="button" data-target="pass-dec">Ver</button>
+        </div>
+      </div>
+      <button class="seal-btn" id="btn-decrypt">
+        <span class="glyph">✦</span> Abrir mensaje
+      </button>
+      <div class="output-wrap" id="wrap-decrypt">
+        <div class="output-label">
+          <label>Mensaje original</label>
+          <button class="copy-btn" id="copy-decrypt">Copiar</button>
+        </div>
+        <div class="output-box plain" id="out-decrypt"></div>
+      </div>
+      <div class="error-box" id="err-decrypt"></div>
+    </div>
+  </div>
+
+  <p class="note">
+    Todo el cifrado ocurre <b>en tu navegador</b>: el mensaje y la clave nunca salen de este dispositivo.
+    Comparte el bloque sellado por un canal y la clave por otro distinto (nunca juntos).
+    Si pierdes la clave, el mensaje no se puede recuperar.
+  </p>
+
+  <footer>AES-256-GCM · PBKDF2 (200.000 iteraciones) · Web Crypto API</footer>
+</div>
+
+<script>
+(function(){
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+
+  function toB64(bytes){
+    let bin = '';
+    bytes.forEach(b => bin += String.fromCharCode(b));
+    return btoa(bin);
+  }
+  function fromB64(b64){
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  async function deriveKey(password, salt){
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt, iterations: 200000, hash:'SHA-256' },
+      keyMaterial,
+      { name:'AES-GCM', length:256 },
+      false,
+      ['encrypt','decrypt']
+    );
+  }
+
+  async function encryptMessage(plaintext, password){
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(password, salt);
+    const ciphertext = await crypto.subtle.encrypt(
+      { name:'AES-GCM', iv }, key, enc.encode(plaintext)
+    );
+    const payload = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
+    payload.set(salt, 0);
+    payload.set(iv, salt.length);
+    payload.set(new Uint8Array(ciphertext), salt.length + iv.length);
+    return 'SELLO1:' + toB64(payload);
+  }
+
+  async function decryptMessage(sealed, password){
+    if(!sealed.startsWith('SELLO1:')){
+      throw new Error('Formato no reconocido. Pega el bloque completo, empezando por "SELLO1:".');
+    }
+    const payload = fromB64(sealed.slice(7));
+    const salt = payload.slice(0,16);
+    const iv = payload.slice(16,28);
+    const ciphertext = payload.slice(28);
+    const key = await deriveKey(password, salt);
+    const plaintextBuf = await crypto.subtle.decrypt(
+      { name:'AES-GCM', iv }, key, ciphertext
+    );
+    return dec.decode(plaintextBuf);
+  }
+
+  // Tabs
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    const mode = t.dataset.mode;
+    document.getElementById('panel-encrypt').style.display = mode === 'encrypt' ? '' : 'none';
+    document.getElementById('panel-decrypt').style.display = mode === 'decrypt' ? '' : 'none';
+  }));
+
+  // Show/hide password
+  document.querySelectorAll('.eye').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? 'Ver' : 'Ocultar';
+    });
+  });
+
+  function showError(id, msg){
+    const box = document.getElementById(id);
+    box.textContent = msg;
+    box.classList.add('visible');
+  }
+  function hideError(id){
+    document.getElementById(id).classList.remove('visible');
+  }
+
+  // Encrypt
+  document.getElementById('btn-encrypt').addEventListener('click', async (e) => {
+    hideError('err-encrypt');
+    const msg = document.getElementById('msg-in').value;
+    const pass = document.getElementById('pass-enc').value;
+    const wrap = document.getElementById('wrap-encrypt');
+    const out = document.getElementById('out-encrypt');
+    if(!msg.trim()){ showError('err-encrypt','Escribe primero un mensaje.'); return; }
+    if(!pass){ showError('err-encrypt','Necesitas una clave para sellar el mensaje.'); return; }
+    e.currentTarget.classList.add('stamping');
+    setTimeout(() => e.currentTarget.classList.remove('stamping'), 400);
+    try{
+      const sealed = await encryptMessage(msg, pass);
+      out.textContent = sealed;
+      wrap.classList.add('visible');
+    }catch(err){
+      showError('err-encrypt', 'No se pudo sellar el mensaje: ' + err.message);
+    }
+  });
+
+  // Decrypt
+  document.getElementById('btn-decrypt').addEventListener('click', async (e) => {
+    hideError('err-decrypt');
+    const sealed = document.getElementById('msg-in-dec').value.trim();
+    const pass = document.getElementById('pass-dec').value;
+    const wrap = document.getElementById('wrap-decrypt');
+    const out = document.getElementById('out-decrypt');
+    if(!sealed){ showError('err-decrypt','Pega el mensaje sellado que recibiste.'); return; }
+    if(!pass){ showError('err-decrypt','Introduce la clave para abrirlo.'); return; }
+    e.currentTarget.classList.add('stamping');
+    setTimeout(() => e.currentTarget.classList.remove('stamping'), 400);
+    try{
+      const plain = await decryptMessage(sealed, pass);
+      out.textContent = plain;
+      wrap.classList.add('visible');
+    }catch(err){
+      wrap.classList.remove('visible');
+      showError('err-decrypt', 'No se pudo abrir: clave incorrecta o el mensaje está corrupto/incompleto.');
+    }
+  });
+
+  // Copy buttons
+  function wireCopy(btnId, sourceId){
+    document.getElementById(btnId).addEventListener('click', () => {
+      const text = document.getElementById(sourceId).textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById(btnId);
+        const original = btn.textContent;
+        btn.textContent = 'Copiado';
+        setTimeout(() => btn.textContent = original, 1500);
+      });
+    });
+  }
+  wireCopy('copy-encrypt', 'out-encrypt');
+  wireCopy('copy-decrypt', 'out-decrypt');
+})();
+</script>
+</body>
+</html>
